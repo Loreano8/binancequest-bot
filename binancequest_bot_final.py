@@ -321,10 +321,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = get_user(update.effective_user.id)
         if correct:
             user["xp"] += 15
+        if correct:
+            result_line = "Bonne reponse !"
+        else:
+            result_line = "Mauvaise reponse. Bonne reponse : *" + q["options"][q["answer"]] + "*"
         text = (
-            f"{'✅ Bonne réponse ! 🎉' if correct else f'❌ Mauvaise réponse. Bonne réponse : *{q[\"options\"][q[\"answer\"]]}*'}\n\n"
-            f"💡 *Explication :* {q['explanation']}\n\n"
-            f"⚡ XP : {user['xp']} | {level_label(xp_to_level(user['xp']))}"
+            f"{result_line}\n\n"
+            f"Explication : {q['explanation']}\n\n"
+            f"XP : {user['xp']} | {level_label(xp_to_level(user['xp']))}"
         )
         keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Autre question", callback_data="menu_quiz"), InlineKeyboardButton("📖 Leçon", callback_data="menu_lesson")],[InlineKeyboardButton("🏠 Menu", callback_data="menu_home")]])
         await update.callback_query.edit_message_text(text, parse_mode="Markdown", reply_markup=keyboard)
