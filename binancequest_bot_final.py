@@ -87,13 +87,21 @@ def level_label(level):
     return ["","🌱 Débutant","⚡ Intermédiaire","🔥 Avancé","💎 Expert","🏆 Master"][level]
 
 def get_crypto_prices():
+    """Récupère les prix via l'API officielle Binance"""
+    symbols = {"BTCUSDT":"bitcoin","ETHUSDT":"ethereum","BNBUSDT":"binancecoin","SOLUSDT":"solana","XRPUSDT":"ripple"}
     try:
-        r = requests.get(
-            "https://api.coingecko.com/api/v3/simple/price",
-            params={"ids":"bitcoin,ethereum,binancecoin,solana,ripple","vs_currencies":"usd","include_24hr_change":"true"},
-            timeout=8
-        )
-        return r.json()
+        r = requests.get("https://api.binance.com/api/v3/ticker/24hr", timeout=8)
+        data = r.json()
+        result = {}
+        for item in data:
+            sym = item.get("symbol","")
+            if sym in symbols:
+                key = symbols[sym]
+                result[key] = {
+                    "usd": float(item["lastPrice"]),
+                    "usd_24h_change": float(item["priceChangePercent"])
+                }
+        return result if result else None
     except:
         return None
 
@@ -168,7 +176,7 @@ async def cmd_prix(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"{fmt('binancecoin','BNB','BNB')}\n"
             f"{fmt('solana','Solana','SOL')}\n"
             f"{fmt('ripple','XRP','XRP')}\n\n"
-            f"_Source : CoinGecko_"
+            f"_Source : Binance API_"
         )
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🔄 Actualiser", callback_data="menu_prix"), InlineKeyboardButton("📰 News", callback_data="menu_news")]])
     if update.message:
