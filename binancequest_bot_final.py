@@ -15,7 +15,7 @@ Configuration :
     Remplacez TELEGRAM_TOKEN et ANTHROPIC_API_KEY par vos vraies clés.
 
 Lancement :
-    python binancequest_bot_final.py
+    python binancequest_bot.py
 """
 
 import logging
