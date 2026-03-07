@@ -40,6 +40,26 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
+
+# ─── LANGUE / LANGUAGE ────────────────────────────────────────────────────────
+user_lang = {}  # uid -> 'fr' or 'en'
+
+def get_lang(uid):
+    return user_lang.get(uid, 'fr')
+
+def t(uid, fr, en):
+    """Return text in user's language"""
+    return en if get_lang(uid) == 'en' else fr
+
+def detect_lang(text):
+    """Simple language detection"""
+    en_words = ['what', 'how', 'why', 'who', 'when', 'where', 'is', 'are', 'the', 'bitcoin', 'crypto', 'help', 'price', 'start']
+    fr_words = ['quoi', 'comment', 'pourquoi', 'qui', 'quand', 'est', 'sont', 'le', 'la', 'les', 'bonjour', 'merci', 'prix']
+    text_lower = text.lower()
+    en_score = sum(1 for w in en_words if w in text_lower)
+    fr_score = sum(1 for w in fr_words if w in text_lower)
+    return 'en' if en_score > fr_score else 'fr'
+
 # ─── DONNÉES ÉDUCATIVES ───────────────────────────────────────────────────────
 QUIZ_BANK = [
     {"q": "Que signifie DeFi ?", "options": ["Digital Finance","Decentralized Finance","Deferred Finance","Defined Finance"], "answer": 1, "explanation": "DeFi = Finance Décentralisée. Des services financiers sans banque, sur la blockchain."},
@@ -117,29 +137,34 @@ def ask_claude(system, messages):
     except Exception as e:
         return f"❌ Erreur IA : {e}"
 
-def main_keyboard():
+def main_keyboard(uid=0):
+    lang = get_lang(uid)
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🎓 Quiz", callback_data="menu_quiz"),
-         InlineKeyboardButton("📖 Leçon", callback_data="menu_lesson")],
-        [InlineKeyboardButton("💰 Prix", callback_data="menu_prix"),
+         InlineKeyboardButton("📖 " + ("Lesson" if lang=="en" else "Leçon"), callback_data="menu_lesson")],
+        [InlineKeyboardButton("💰 " + ("Prices" if lang=="en" else "Prix"), callback_data="menu_prix"),
          InlineKeyboardButton("📰 News", callback_data="menu_news")],
-        [InlineKeyboardButton("⚖️ Portefeuille", callback_data="menu_portfolio"),
-         InlineKeyboardButton("🏅 Profil", callback_data="menu_profil")],
-        [InlineKeyboardButton("🤖 Poser une question à l'IA", callback_data="menu_ia")],
+        [InlineKeyboardButton("⚖️ " + ("Portfolio" if lang=="en" else "Portefeuille"), callback_data="menu_portfolio"),
+         InlineKeyboardButton("🏅 " + ("Profile" if lang=="en" else "Profil"), callback_data="menu_profil")],
+        [InlineKeyboardButton("🤖 " + ("Ask AI" if lang=="en" else "Poser une question à l'IA"), callback_data="menu_ia")],
+        [InlineKeyboardButton("🇫🇷 Français", callback_data="lang_fr"),
+         InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")],
     ])
 
 # ─── COMMANDES ────────────────────────────────────────────────────────────────
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = get_user(update.effective_user.id)
+    uid = update.effective_user.id
+    user = get_user(uid)
     name = update.effective_user.first_name
+    lang = get_lang(uid)
     text = (
-        f"🏆 *Bienvenue sur BinanceQuest AI, {name} !*\n\n"
-        f"Ton assistant crypto éducatif basé sur Binance Academy.\n\n"
-        f"*Niveau :* {level_label(xp_to_level(user['xp']))}\n"
+        f"🏆 *{'Welcome to' if lang=='en' else 'Bienvenue sur'} BinanceQuest AI, {name} !*\n\n"
+        f"{'Your crypto education assistant based on Binance Academy.' if lang=='en' else 'Ton assistant crypto éducatif basé sur Binance Academy.'}\n\n"
+        f"*{'Level' if lang=='en' else 'Niveau'} :* {level_label(xp_to_level(user['xp']))}\n"
         f"*XP :* {user['xp']} ⚡\n\n"
-        f"Que veux-tu faire ?"
+        f"{'What would you like to do?' if lang=='en' else 'Que veux-tu faire ?'}"
     )
-    await update.message.reply_text(text, parse_mode="Markdown", reply_markup=main_keyboard())
+    await update.message.reply_text(text, parse_mode="Markdown", reply_markup=main_keyboard(uid))
 
 async def cmd_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = random.choice(QUIZ_BANK)
@@ -268,7 +293,7 @@ async def handle_free_question(update, context, question):
     messages = history + [{"role": "user", "content": question}]
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
     reply = ask_claude(
-        "Tu es BinanceQuest AI, assistant éducatif crypto basé sur Binance Academy. Réponds de façon claire, pédagogique et encourageante. Emojis avec modération. Jamais de conseils financiers directs. Max 200 mots.",
+        f"You are BinanceQuest AI, a crypto education assistant based on Binance Academy. " + ("Respond in English." if get_lang(uid)=="en" else "Réponds en français.") + " Be clear, educational and encouraging. Use emojis sparingly. Never give direct financial advice. Max 200 words.",
         messages
     )
     user["chat_history"] += [{"role":"user","content":question},{"role":"assistant","content":reply}]
@@ -306,15 +331,25 @@ async def handle_rebalance(update, context):
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.answer()
     data = update.callback_query.data
+    uid = update.effective_user.id
     routes = {
         "menu_quiz": cmd_quiz, "menu_lesson": cmd_lecon,
         "menu_prix": cmd_prix, "menu_news": cmd_news,
         "menu_portfolio": cmd_portfolio, "menu_profil": cmd_profil,
     }
-    if data in routes:
+    if data == "lang_fr":
+        user_lang[uid] = 'fr'
+        await update.callback_query.edit_message_text("🇫🇷 *Langue : Français activé !*\n\nTape /start pour le menu.", parse_mode="Markdown")
+        return
+    elif data == "lang_en":
+        user_lang[uid] = 'en'
+        await update.callback_query.edit_message_text("🇬🇧 *Language: English activated!*\n\nType /start for the menu.", parse_mode="Markdown")
+        return
+    elif data in routes:
         await routes[data](update, context)
     elif data == "menu_home":
-        await update.callback_query.edit_message_text("🏠 Tape /start pour revenir au menu.")
+        lang = get_lang(uid)
+        await update.callback_query.edit_message_text("🏠 " + ("Type /start for the main menu." if lang=="en" else "Tape /start pour revenir au menu."))
     elif data == "menu_ia":
         await update.callback_query.edit_message_text("🤖 *Assistant IA*\n\nPose ta question directement dans le chat !\n_Ex : C'est quoi le halving ?_", parse_mode="Markdown")
     elif data == "portfolio_rebalance":
@@ -344,7 +379,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.text.startswith("/"):
         return
-    await handle_free_question(update, context, update.message.text.strip())
+    text = update.message.text.strip()
+    uid = update.effective_user.id
+    # Auto-detect language
+    detected = detect_lang(text)
+    if detected == 'en':
+        user_lang[uid] = 'en'
+    await handle_free_question(update, context, text)
 
 # ─── QUIZ QUOTIDIEN ───────────────────────────────────────────────────────────
 async def daily_quiz_job(context: ContextTypes.DEFAULT_TYPE):
