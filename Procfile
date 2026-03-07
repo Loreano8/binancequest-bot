@@ -1,1 +1,1 @@
-worker: python binancequest_bot.py
+worker: python binancequest_bot_final.py
