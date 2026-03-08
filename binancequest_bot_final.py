@@ -407,7 +407,7 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.job_queue.run_daily(daily_quiz_job, time=time(hour=DAILY_QUIZ_HOUR, minute=DAILY_QUIZ_MINUTE))
     print("🚀 BinanceQuest AI Bot démarré !")
-    app.run_polling()
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
