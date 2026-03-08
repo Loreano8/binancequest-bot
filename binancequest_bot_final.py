@@ -42,17 +42,18 @@ client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
 # ─── LANGUE / LANGUAGE ────────────────────────────────────────────────────────
-user_lang = {}  # uid -> 'fr' or 'en'
-
 def get_lang(uid):
-    return user_lang.get(uid, 'fr')
+    """Get language from persistent user_data"""
+    return get_user(uid).get('lang', 'fr')
+
+def set_lang(uid, lang):
+    """Save language in persistent user_data"""
+    get_user(uid)['lang'] = lang
 
 def t(uid, fr, en):
-    """Return text in user's language"""
     return en if get_lang(uid) == 'en' else fr
 
 def detect_lang(text):
-    """Simple language detection"""
     en_words = ['what', 'how', 'why', 'who', 'when', 'where', 'is', 'are', 'the', 'bitcoin', 'crypto', 'help', 'price', 'start']
     fr_words = ['quoi', 'comment', 'pourquoi', 'qui', 'quand', 'est', 'sont', 'le', 'la', 'les', 'bonjour', 'merci', 'prix']
     text_lower = text.lower()
@@ -338,11 +339,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "menu_portfolio": cmd_portfolio, "menu_profil": cmd_profil,
     }
     if data == "lang_fr":
-        user_lang[uid] = 'fr'
+        set_lang(uid, 'fr')
         await update.callback_query.edit_message_text("🇫🇷 *Langue : Français activé !*\n\nTape /start pour le menu.", parse_mode="Markdown")
         return
     elif data == "lang_en":
-        user_lang[uid] = 'en'
+        set_lang(uid, 'en')
         await update.callback_query.edit_message_text("🇬🇧 *Language: English activated!*\n\nType /start for the menu.", parse_mode="Markdown")
         return
     elif data in routes:
@@ -384,7 +385,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Auto-detect language
     detected = detect_lang(text)
     if detected == 'en':
-        user_lang[uid] = 'en'
+        set_lang(uid, 'en')
     await handle_free_question(update, context, text)
 
 # ─── QUIZ QUOTIDIEN ───────────────────────────────────────────────────────────
