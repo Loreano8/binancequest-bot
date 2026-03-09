@@ -141,7 +141,7 @@ async def cmd_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["current_quiz"] = q
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(opt, callback_data=f"quiz_{i}")] for i, opt in enumerate(q["options"])])
     question = q["q"] if en else q["q_fr"]
-    text = f"Quiz\n\n{question}"
+    text = f"🎯 Quiz\n\n{question}"
     if update.message:
         await update.message.reply_text(text, reply_markup=keyboard)
     else:
@@ -170,7 +170,8 @@ async def cmd_prix(update: Update, context: ContextTypes.DEFAULT_TYPE):
             d = prices.get(cid, {})
             p, c = d.get("usd", 0), d.get("usd_24h_change", 0)
             arrow = "+" if c >= 0 else ""
-            return f"{'UP' if c >= 0 else 'DN'} {name} ({sym}): ${p:,.2f} ({arrow}{c:.2f}%)"
+            emoji = "🟢" if c >= 0 else "🔴"
+            return f"{emoji} {name} ({sym}): ${p:,.2f} ({arrow}{c:.2f}%)"
         title = "Live Crypto Prices" if en else "Prix Crypto en Direct"
         text = f"{title}\n\n{fmt('bitcoin','Bitcoin','BTC')}\n{fmt('ethereum','Ethereum','ETH')}\n{fmt('binancecoin','BNB','BNB')}\n{fmt('solana','Solana','SOL')}\n{fmt('ripple','XRP','XRP')}\n\nSource: Binance API"
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Refresh" if en else "Actualiser", callback_data="menu_prix"), InlineKeyboardButton("News", callback_data="menu_news")]])
@@ -195,14 +196,14 @@ async def cmd_news(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.callback_query.answer("Loading..." if en else "Chargement...")
 
-    lang_instr = "Respond in English." if en else "Reponds en francais."
+    lang_instr = "IMPORTANT: You MUST respond ONLY in English. Never use French words." if en else "IMPORTANT: Tu DOIS répondre UNIQUEMENT en français. N'utilise jamais de mots anglais dans ta réponse."
     analysis = ask_claude(
         f"You are BinanceQuest AI, crypto expert. {lang_instr} Give a concise market briefing: 1) Market sentiment 2) Key points 3) Educational opportunity. Factual, educational, no financial advice. Max 250 words.",
         [{"role": "user", "content": f"Analyze the crypto market. Current prices: {price_ctx}"}]
     )
     title = "Market News" if en else "News Marche"
     warning = "Not financial advice." if en else "Pas un conseil financier."
-    text = f"{title}\n\n{analysis}\n\n{warning}"
+    text = f"📰 {title}\n\n{analysis}\n\n{warning}"
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Prices" if en else "Prix", callback_data="menu_prix"), InlineKeyboardButton("New analysis" if en else "Nouvelle analyse", callback_data="menu_news")]])
     await context.bot.send_message(update.effective_chat.id, text, reply_markup=keyboard)
 
@@ -232,7 +233,7 @@ async def cmd_portfolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     title = "My Portfolio" if en else "Mon Portefeuille"
     total_label = "Total value" if en else "Valeur totale"
-    text = f"{title}\n\n" + "\n".join(lines) + f"\n\n{total_label}: ${total:,.2f}"
+    text = f"💼 {title}\n\n" + "\n".join(lines) + f"\n\n{total_label}: ${total:,.2f}"
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Analyze & Rebalance" if en else "Analyser & Reequilibrer", callback_data="portfolio_rebalance")]])
     if update.message:
         await update.message.reply_text(text, reply_markup=keyboard)
@@ -274,7 +275,7 @@ async def handle_free_question(update, context, question):
     history = user["chat_history"][-6:]
     messages = history + [{"role": "user", "content": question}]
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
-    lang_instr = "Respond in English." if en else "Reponds en francais."
+    lang_instr = "IMPORTANT: You MUST respond ONLY in English. Never use French words." if en else "IMPORTANT: Tu DOIS répondre UNIQUEMENT en français. N'utilise jamais de mots anglais dans ta réponse."
     reply = ask_claude(
         f"You are BinanceQuest AI, crypto education assistant based on Binance Academy. {lang_instr} Be clear, educational and encouraging. No direct financial advice. Max 200 words.",
         messages
@@ -303,14 +304,14 @@ async def handle_rebalance(update, context):
         total += value
         lines.append(f"{coin}: {qty} units, ${value:.2f}, {change:+.1f}% 24h")
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
-    lang_instr = "Respond in English." if en else "Reponds en francais."
+    lang_instr = "IMPORTANT: You MUST respond ONLY in English. Never use French words." if en else "IMPORTANT: Tu DOIS répondre UNIQUEMENT en français. N'utilise jamais de mots anglais dans ta réponse."
     analysis = ask_claude(
         f"You are BinanceQuest AI, crypto portfolio expert. {lang_instr} Analyze the portfolio and give educational rebalancing suggestions: diversification, concentration risks, DCA principles. No direct financial advice. Max 250 words.",
         [{"role":"user","content":f"Portfolio (total ${total:.2f}):\n" + "\n".join(lines)}]
     )
     title = "Portfolio Analysis" if en else "Analyse du Portefeuille"
     warning = "Educational only, not financial advice." if en else "Educatif uniquement, pas un conseil financier."
-    text = f"{title}\n\n{analysis}\n\n{warning}"
+    text = f"📰 {title}\n\n{analysis}\n\n{warning}"
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Prices" if en else "Prix", callback_data="menu_prix"), InlineKeyboardButton("Menu", callback_data="menu_home")]])
     await context.bot.send_message(update.effective_chat.id, text, reply_markup=keyboard)
 
