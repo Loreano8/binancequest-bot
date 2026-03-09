@@ -83,8 +83,10 @@ def xp_to_level(xp):
     elif xp < 500: return 4
     else: return 5
 
-def level_label(level):
-    return ["","Beginner","Intermediate","Advanced","Expert","Master"][level]
+def level_label(level, lang="en"):
+    fr = ["","Débutant","Intermédiaire","Avancé","Expert","Master"]
+    en = ["","Beginner","Intermediate","Advanced","Expert","Master"]
+    return (en if lang=="en" else fr)[level]
 
 def get_crypto_prices():
     symbols = {"BTCUSDT":"bitcoin","ETHUSDT":"ethereum","BNBUSDT":"binancecoin","SOLUSDT":"solana","XRPUSDT":"ripple"}
@@ -157,7 +159,7 @@ async def cmd_lecon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lesson = random.choice(LESSONS)
     content = lesson["content"] if en else lesson["content_fr"]
     text = f"{'Lesson of the day' if en else 'Lecon du jour'}: {lesson['title']}\n\n{content}\n\n{'Questions? Write them!' if en else 'Des questions ? Ecris-les !'}"
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Quiz", callback_data="menu_quiz"), InlineKeyboardButton("Another lesson" if en else "Autre lecon", callback_data="menu_lesson")]])
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🎯 Quiz", callback_data="menu_quiz"), InlineKeyboardButton("📖 " + ("Another lesson" if en else "Autre leçon"), callback_data="menu_lesson")], [InlineKeyboardButton("🏠 Menu", callback_data="menu_home")]])
     if update.message:
         await update.message.reply_text(text, reply_markup=keyboard)
     else:
@@ -286,7 +288,7 @@ async def handle_free_question(update, context, question):
     )
     user["chat_history"] += [{"role":"user","content":question},{"role":"assistant","content":reply}]
     user["chat_history"] = user["chat_history"][-20:]
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Quiz", callback_data="menu_quiz"), InlineKeyboardButton("Menu", callback_data="menu_home")]])
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🎯 Quiz", callback_data="menu_quiz"), InlineKeyboardButton("🏠 Menu", callback_data="menu_home")]])
     await update.message.reply_text(reply, reply_markup=keyboard)
 
 async def handle_rebalance(update, context):
@@ -316,7 +318,7 @@ async def handle_rebalance(update, context):
     title = "Portfolio Analysis" if en else "Analyse du Portefeuille"
     warning = "Educational only, not financial advice." if en else "Educatif uniquement, pas un conseil financier."
     text = f"📰 {title}\n\n{analysis}\n\n{warning}"
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Prices" if en else "Prix", callback_data="menu_prix"), InlineKeyboardButton("Menu", callback_data="menu_home")]])
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🔄 " + ("Refresh" if en else "Actualiser"), callback_data="menu_prix"), InlineKeyboardButton("📰 News", callback_data="menu_news")], [InlineKeyboardButton("🏠 Menu", callback_data="menu_home")]])
     await context.bot.send_message(update.effective_chat.id, text, reply_markup=keyboard)
 
 # ─── CALLBACKS ────────────────────────────────────────────────────────────────
@@ -356,8 +358,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             user["xp"] += 15
         explanation = q["explanation"] if en else q["explanation_fr"]
         result_line = ("Correct!" if correct else f"Wrong. Correct answer: {q['options'][q['answer']]}") if en else ("Bonne reponse!" if correct else f"Mauvaise reponse. Bonne reponse: {q['options'][q['answer']]}")
-        text = f"{result_line}\n\nExplanation: {explanation}\n\nXP: {user['xp']} | {level_label(xp_to_level(user['xp']))}"
-        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Next question" if en else "Autre question", callback_data="menu_quiz"), InlineKeyboardButton("Menu", callback_data="menu_home")]])
+        text = f"{result_line}\n\nExplanation: {explanation}\n\nXP: {user['xp']} | ⚡ {level_label(xp_to_level(user['xp']))}"
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🎯 " + ("Next question" if en else "Autre question"), callback_data="menu_quiz"), InlineKeyboardButton("📖 " + ("Lesson" if en else "Leçon"), callback_data="menu_lesson")], [InlineKeyboardButton("🏠 Menu", callback_data="menu_home")]])
         await update.callback_query.edit_message_text(text, reply_markup=keyboard)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
