@@ -111,11 +111,15 @@ def ask_claude(system, messages):
 def main_keyboard(uid=0):
     en = get_lang(uid) == "en"
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("Quiz", callback_data="menu_quiz"), InlineKeyboardButton("Lesson" if en else "Lecon", callback_data="menu_lesson")],
-        [InlineKeyboardButton("Prices" if en else "Prix", callback_data="menu_prix"), InlineKeyboardButton("News", callback_data="menu_news")],
-        [InlineKeyboardButton("Portfolio" if en else "Portefeuille", callback_data="menu_portfolio"), InlineKeyboardButton("Profile" if en else "Profil", callback_data="menu_profil")],
-        [InlineKeyboardButton("Ask AI" if en else "Poser une question a l'IA", callback_data="menu_ia")],
-        [InlineKeyboardButton("FR Francais", callback_data="lang_fr"), InlineKeyboardButton("EN English", callback_data="lang_en")],
+        [InlineKeyboardButton("🎯 Quiz", callback_data="menu_quiz"),
+         InlineKeyboardButton("📖 " + ("Lesson" if en else "Leçon"), callback_data="menu_lesson")],
+        [InlineKeyboardButton("💰 " + ("Prices" if en else "Prix"), callback_data="menu_prix"),
+         InlineKeyboardButton("📰 News", callback_data="menu_news")],
+        [InlineKeyboardButton("⚖️ " + ("Portfolio" if en else "Portefeuille"), callback_data="menu_portfolio"),
+         InlineKeyboardButton("🏅 " + ("Profile" if en else "Profil"), callback_data="menu_profil")],
+        [InlineKeyboardButton("🤖 " + ("Ask AI" if en else "Poser une question à l'IA"), callback_data="menu_ia")],
+        [InlineKeyboardButton("🇫🇷 Français", callback_data="lang_fr"),
+         InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")],
     ])
 
 # ─── COMMANDES ────────────────────────────────────────────────────────────────
