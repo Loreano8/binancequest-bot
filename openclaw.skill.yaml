@@ -1,0 +1,59 @@
+name: binancequest
+version: 1.0.0
+description: Gamified crypto education assistant powered by OpenClaw AI and Binance Academy
+author: BinanceQuest AI
+license: MIT
+
+skill:
+  type: telegram-bot
+  language: python
+  entry: binancequest_bot_final.py
+
+channels:
+  - telegram
+
+triggers:
+  - pattern: "quiz"
+    description: Start a crypto quiz
+  - pattern: "prix|prices|price"
+    description: Get live crypto prices from Binance API
+  - pattern: "news|marché|market"
+    description: AI-powered market analysis
+  - pattern: "lecon|lesson"
+    description: Crypto lesson of the day
+  - pattern: "portfolio|portefeuille"
+    description: Portfolio tracker and rebalancing
+  - pattern: ".*"
+    description: Answer any crypto question with AI
+
+api_keys:
+  - name: TELEGRAM_TOKEN
+    description: Telegram Bot API token from @BotFather
+    required: true
+  - name: ANTHROPIC_API_KEY
+    description: OpenClaw/Anthropic API key
+    required: true
+
+features:
+  - gamification
+  - multilingual
+  - real-time-prices
+  - ai-assistant
+  - portfolio-tracking
+  - daily-automation
+
+data_sources:
+  - name: Binance API
+    url: https://api.binance.com/api/v3/ticker/24hr
+    description: Real-time cryptocurrency prices
+  - name: Binance Academy
+    url: https://academy.binance.com
+    description: Educational crypto content
+
+tags:
+  - education
+  - crypto
+  - binance
+  - gamification
+  - telegram
+  - defi
