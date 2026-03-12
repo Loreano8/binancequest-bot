@@ -298,6 +298,31 @@ async def cmd_ajout(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("Invalid format. Ex: /ajout BTC 0.5")
 
+async def cmd_retirer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    en = get_lang(uid) == "en"
+    user = get_user(uid)
+    args = context.args
+    if len(args) != 1:
+        await update.message.reply_text("Format: /retirer BTC")
+        return
+    coin = args[0].upper()
+    if coin in user["portfolio"]:
+        del user["portfolio"][coin]
+        msg = "✅ " + coin + (" removed from portfolio!" if en else " retire du portefeuille!")
+        await update.message.reply_text(msg + "\n\n/portfolio")
+    else:
+        msg = "❌ " + coin + (" not found in portfolio." if en else " introuvable dans le portefeuille.")
+        await update.message.reply_text(msg)
+
+async def cmd_reset_portfolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    en = get_lang(uid) == "en"
+    user = get_user(uid)
+    user["portfolio"] = {}
+    msg = "🗑️ Portfolio cleared!" if en else "🗑️ Portefeuille vide!"
+    await update.message.reply_text(msg + "\n\n/portfolio")
+
 async def cmd_profil(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     en = get_lang(uid) == "en"
