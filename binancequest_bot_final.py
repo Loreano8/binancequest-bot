@@ -265,14 +265,19 @@ async def cmd_portfolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     prices = get_crypto_prices()
-    coin_ids = {"BTC":"bitcoin","ETH":"ethereum","BNB":"binancecoin","SOL":"solana","XRP":"ripple"}
+    coin_ids = {"BTC":"bitcoin","ETH":"ethereum","BNB":"binancecoin","SOL":"solana","XRP":"ripple","DAI":"dai"}
+    stablecoins = {"USDT","USDC","FDUSD","TUSD","DAI"}
     total, lines = 0, []
     for coin, qty in portfolio.items():
-        cid = coin_ids.get(coin.upper())
-        price = prices.get(cid, {}).get("usd", 0) if prices and cid else 0
+        coin_upper = coin.upper()
+        if coin_upper in stablecoins:
+            price = 1.0
+        else:
+            cid = coin_ids.get(coin_upper)
+            price = prices.get(cid, {}).get("usd", 0) if prices and cid else 0
         value = price * qty
         total += value
-        lines.append(f"{coin.upper()}: {qty} x ${price:,.2f} = ${value:,.2f}")
+        lines.append(f"{coin_upper}: {qty} x ${price:,.2f} = ${value:,.2f}")
 
     title = "My Portfolio" if en else "Mon Portefeuille"
     total_label = "Total value" if en else "Valeur totale"
@@ -362,15 +367,21 @@ async def handle_rebalance(update, context):
         await update.callback_query.edit_message_text("Empty portfolio. Add crypto with /ajout BTC 0.5")
         return
     prices = get_crypto_prices()
-    coin_ids = {"BTC":"bitcoin","ETH":"ethereum","BNB":"binancecoin","SOL":"solana","XRP":"ripple"}
+    coin_ids = {"BTC":"bitcoin","ETH":"ethereum","BNB":"binancecoin","SOL":"solana","XRP":"ripple","DAI":"dai"}
+    stablecoins = {"USDT","USDC","FDUSD","TUSD","DAI"}
     total, lines = 0, []
     for coin, qty in portfolio.items():
-        cid = coin_ids.get(coin.upper())
-        price = prices.get(cid, {}).get("usd", 0) if prices and cid else 0
-        change = prices.get(cid, {}).get("usd_24h_change", 0) if prices and cid else 0
+        coin_upper = coin.upper()
+        if coin_upper in stablecoins:
+            price = 1.0
+            change = 0.0
+        else:
+            cid = coin_ids.get(coin_upper)
+            price = prices.get(cid, {}).get("usd", 0) if prices and cid else 0
+            change = prices.get(cid, {}).get("usd_24h_change", 0) if prices and cid else 0
         value = price * qty
         total += value
-        lines.append(f"{coin}: {qty} units, ${value:.2f}, {change:+.1f}% 24h")
+        lines.append(f"{coin_upper}: {qty} units, ${value:.2f}, {change:+.1f}% 24h")
     await context.bot.send_chat_action(update.effective_chat.id, "typing")
     lang_instr = "IMPORTANT: You MUST respond ONLY in English. Never use French words." if en else "IMPORTANT: Tu DOIS répondre UNIQUEMENT en français. N'utilise jamais de mots anglais dans ta réponse."
     analysis = ask_claude(
