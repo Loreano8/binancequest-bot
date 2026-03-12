@@ -459,13 +459,13 @@ async def daily_quiz_job(context: ContextTypes.DEFAULT_TYPE):
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
-    for cmd, handler in [("start",cmd_start),("quiz",cmd_quiz),("lecon",cmd_lecon),("prix",cmd_prix),("news",cmd_news),("portfolio",cmd_portfolio),("ajout",cmd_ajout),("profil",cmd_profil)]:
+    for cmd, handler in [("start",cmd_start),("quiz",cmd_quiz),("lecon",cmd_lecon),("prix",cmd_prix),("news",cmd_news),("portfolio",cmd_portfolio),("ajout",cmd_ajout),("retirer",cmd_retirer),("reset_portfolio",cmd_reset_portfolio),("profil",cmd_profil)]:
         app.add_handler(CommandHandler(cmd, handler))
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.job_queue.run_daily(daily_quiz_job, time=time(hour=DAILY_QUIZ_HOUR, minute=DAILY_QUIZ_MINUTE))
     print("BinanceQuest AI Bot started!")
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=True, allowed_updates=["message","callback_query"])
 
 if __name__ == "__main__":
     main()
