@@ -24,13 +24,32 @@ logger = logging.getLogger(__name__)
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
 
 # ─── STOCKAGE ─────────────────────────────────────────────────────────────────
-user_data = {}
+import json
+
+DATA_FILE = "user_data.json"
+
+def load_user_data():
+    try:
+        with open(DATA_FILE, "r") as f:
+            raw = json.load(f)
+            return {int(k): v for k, v in raw.items()}
+    except:
+        return {}
+
+def save_user_data():
+    try:
+        with open(DATA_FILE, "w") as f:
+            json.dump({str(k): v for k, v in user_data.items()}, f)
+    except Exception as e:
+        logger.warning(f"Cannot save user_data: {e}")
+
+user_data = load_user_data()
 
 def get_user(uid, telegram_lang=None):
     if uid not in user_data:
-        # Auto-detect from Telegram language code
         lang = "en" if (telegram_lang and telegram_lang.startswith("en")) else "fr"
         user_data[uid] = {"xp": 0, "streak": 0, "chat_history": [], "portfolio": {}, "lang": lang}
+        save_user_data()
     return user_data[uid]
 
 # ─── LANGUE ───────────────────────────────────────────────────────────────────
@@ -39,6 +58,7 @@ def get_lang(uid):
 
 def set_lang(uid, lang):
     get_user(uid)["lang"] = lang
+    save_user_data()
 
 def detect_lang(text):
     en_words = ["what","how","why","who","when","where","is","are","the","bitcoin","crypto","help","price","start"]
@@ -299,6 +319,7 @@ async def cmd_ajout(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         coin, qty = args[0].upper(), float(args[1])
         user["portfolio"][coin] = qty
+        save_user_data()
         await update.message.reply_text(f"{qty} {coin} {'added!' if en else 'ajoute!'}\n\n/portfolio")
     except:
         await update.message.reply_text("Invalid format. Ex: /ajout BTC 0.5")
@@ -314,6 +335,7 @@ async def cmd_retirer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     coin = args[0].upper()
     if coin in user["portfolio"]:
         del user["portfolio"][coin]
+        save_user_data()
         msg = "✅ " + coin + (" removed from portfolio!" if en else " retire du portefeuille!")
         await update.message.reply_text(msg + "\n\n/portfolio")
     else:
@@ -325,6 +347,7 @@ async def cmd_reset_portfolio(update: Update, context: ContextTypes.DEFAULT_TYPE
     en = get_lang(uid) == "en"
     user = get_user(uid)
     user["portfolio"] = {}
+    save_user_data()
     msg = "🗑️ Portfolio cleared!" if en else "🗑️ Portefeuille vide!"
     await update.message.reply_text(msg + "\n\n/portfolio")
 
@@ -429,6 +452,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = get_user(uid)
         if correct:
             user["xp"] += 15
+            save_user_data()
         explanation = q["explanation"] if en else q["explanation_fr"]
         result_line = ("Correct!" if correct else f"Wrong. Correct answer: {q['options'][q['answer']]}") if en else ("Bonne reponse!" if correct else f"Mauvaise reponse. Bonne reponse: {q['options'][q['answer']]}")
         text = f"{result_line}\n\nExplanation: {explanation}\n\nXP: {user['xp']} | ⚡ {level_label(xp_to_level(user['xp']))}"
@@ -447,12 +471,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ─── QUIZ QUOTIDIEN ───────────────────────────────────────────────────────────
 async def daily_quiz_job(context: ContextTypes.DEFAULT_TYPE):
     q = random.choice(QUIZ_BANK)
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(opt, callback_data=f"quiz_{i}")] for i, opt in enumerate(q["options"])])
     for uid in list(user_data.keys()):
         en = get_lang(uid) == "en"
         question = q["q"] if en else q["q_fr"]
+        options = q["options"] if en else q.get("options_fr", q["options"])
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(opt, callback_data=f"quiz_{i}")] for i, opt in enumerate(options)])
+        title = "Daily Quiz BinanceQuest!" if en else "Quiz Quotidien BinanceQuest!"
         try:
-            await context.bot.send_message(uid, f"Daily Quiz BinanceQuest!\n\n{question}", reply_markup=keyboard)
+            await context.bot.send_message(uid, f"☀️ {title}\n\n{question}", reply_markup=keyboard)
         except Exception as e:
             logger.warning(f"Cannot send to {uid}: {e}")
 
